@@ -22,7 +22,7 @@ def convert_audio(input_file):
 # Function to split audio into segments
 def split_audio(audio_file):
     segment_pattern = os.path.splitext(audio_file)[0] + ".segmented_%03d.wav"
-    ffmpeg.input(audio_file).output(segment_pattern, f="segment", segment_time=300).run()
+    ffmpeg.input(audio_file).output(segment_pattern, f="segment", segment_time=60).run()
     return segment_pattern
 
 # Function to filter each audio segment
