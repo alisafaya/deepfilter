@@ -59,7 +59,7 @@ def process_input(input_file):
         shutil.rmtree(filtered_dir)
         output_format = input_file.split(".")[-1]
 
-        if is_video(input_file):
+        if output_format in ["mp4", "mkv", "webm", "avi", "mov", "flv", "wmv", "m4v"]:
             audio_aac_file = f"filtered-{input_file}.aac"
             ffmpeg.input(output_file).output(audio_aac_file, ar=44100, codec="aac").run()
 
