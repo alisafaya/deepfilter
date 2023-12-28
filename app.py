@@ -48,6 +48,11 @@ def get_format_info(input_file):
     result = os.popen(f"ffprobe -v error -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 {input_file}").read()
     return result
 
+# Function to increase volume of audio with sox
+def increase_volume(input_file):
+    os.system(f"sox -v 1.5 {input_file} {input_file}.vol.wav")
+    os.rename(f"{input_file}.vol.wav", input_file)
+    return input_file
 
 # Function to handle video or audio input
 def process_input(input_file):
@@ -56,6 +61,7 @@ def process_input(input_file):
         segments = split_audio(audio_file)
         filtered_dir = filter_audio(segments)
         output_file = combine_segments(filtered_dir, f"{input_file}.filtered.wav")
+        output_file = increase_volume(output_file)
         shutil.rmtree(filtered_dir)
         output_format = input_file.split(".")[-1]
 
@@ -76,8 +82,7 @@ def process_input(input_file):
 
             return input_file
         else:
-            ffmpeg.input(output_file).output(f"filtered-{input_file}.{output_format}", ac=1, ar=16000).run()
-
+            ffmpeg.input(output_file).output(f"filtered-{input_file}.{output_format}").run()
             os.rename(f"filtered-{input_file}.{output_format}", input_file)
             os.remove(output_file)
             os.remove(audio_file)
