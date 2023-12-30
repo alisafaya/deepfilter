@@ -55,12 +55,16 @@ def increase_volume(input_file):
     return input_file
 
 def restore_metadata(input, output):
-    os.system(f"ffmpeg -i {input} -c copy -map_metadata 0 -map_metadata:s:v 0:s:v -map_metadata:s:a 0:s:a -f ffmetadata {input}.txt")
+    os.system(f"ffmpeg -i {input} -c copy -map_metadata 0 -f ffmetadata {input}.txt")
+    
     lines = open(f"{input}.txt").readlines()
-    lines = [lines[0],] + [line for line in lines if any(x in line for x in ("title", "artist", "album", "track", "date", "comment"))]
-    open(f"{input}.txt", "w").writelines(lines)
-    os.system(f"ffmpeg -i {output} -f ffmetadata -i {input}.txt -c copy -map_metadata 1 fixed.{output}")
-    os.rename(f"fixed.{output}", output)
+
+    if len(lines) > 1:
+        lines = [lines[0],] + [line for line in lines if any(x in line for x in ("title", "artist", "album", "track", "date", "comment"))]
+        open(f"{input}.txt", "w").writelines(lines)
+        os.system(f"ffmpeg -i {output} -f ffmetadata -i {input}.txt -c copy -map_metadata 1 fixed.{output}")
+        os.rename(f"fixed.{output}", output)
+
     os.remove(f"{input}.txt")
     return output
 
