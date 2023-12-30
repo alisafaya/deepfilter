@@ -54,6 +54,20 @@ def increase_volume(input_file):
     os.rename(f"{input_file}.vol.wav", input_file)
     return input_file
 
+def restore_metadata(input, output):
+    os.system(f"ffmpeg -i {input} -c copy -map_metadata 0 -map_metadata:s:v 0:s:v -map_metadata:s:a 0:s:a -f ffmetadata {input}.txt")
+    lines = open(f"{input}.txt").readlines()
+    lines = [lines[0],] + [line for line in lines if any(x in line for x in ("title", "artist", "album", "track", "date", "comment"))]
+    open(f"{input}.txt", "w").writelines(lines)
+    os.system(f"ffmpeg -i {output} -f ffmetadata -i {input}.txt -c copy -map_metadata 1 fixed.{output}")
+    os.rename(f"fixed.{output}", output)
+    os.remove(f"{input}.txt")
+    return output
+
+def get_samplerate(input_file):
+    result = os.popen(f"ffprobe -v error -show_entries stream=sample_rate -of default=noprint_wrappers=1:nokey=1 {input_file}").read()
+    return int(result.strip())
+
 # Function to handle video or audio input
 def process_input(input_file):
     try:
@@ -73,16 +87,18 @@ def process_input(input_file):
             audio_aac_stream = ffmpeg.input(audio_aac_file).audio
             
             merged_file = f"filtered-{input_file}.{output_format}"
-            ffmpeg.output(video_stream, audio_aac_stream, merged_file, vcodec="copy", acodec="copy").run()
+            ffmpeg.output(video_stream, audio_aac_stream, merged_file, movflags="use_metadata_tags", vcodec="copy", acodec="copy").run()
 
             os.remove(audio_aac_file)
             os.remove(output_file)
             os.remove(audio_file)
+            restore_metadata(input_file, merged_file)
             os.rename(merged_file, input_file)
-
             return input_file
         else:
-            ffmpeg.input(output_file).output(f"filtered-{input_file}.{output_format}").run()
+            sample_rate = get_samplerate(input_file)
+            ffmpeg.input(output_file).output(f"filtered-{input_file}.{output_format}", movflags="use_metadata_tags", ac=1, ar=16000 if sample_rate < 16000 else sample_rate).run()
+            restore_metadata(input_file, f"filtered-{input_file}.{output_format}")
             os.rename(f"filtered-{input_file}.{output_format}", input_file)
             os.remove(output_file)
             os.remove(audio_file)
